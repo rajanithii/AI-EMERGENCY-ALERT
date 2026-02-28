@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Editor folders
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database and certs
+lifeline.db
+certs/
+certs/*
+
+# Env files
+.env
+
+# Logs
+*.log
+
+# Test outputs
+.pytest_cache/
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/
+
+# coverage
+.coverage
+coverage.xml
+
+# Ignore secrets
+secrets.json

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LifeLine — Login</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --red:#ff1a1a;
+  --red-dim:rgba(255,26,26,0.15);
+  --glass:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.1);
+}
+
+body{
+  height:100vh;
+  background:#080808;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:'DM Sans',sans-serif;
+  overflow:hidden;
+  color:white;
+}
+
+/* Animated background grid */
+.grid{
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(255,26,26,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,26,26,0.05) 1px, transparent 1px);
+  background-size:50px 50px;
+  animation:gridMove 20s linear infinite;
+}
+@keyframes gridMove{
+  from{transform:translateY(0);}
+  to{transform:translateY(50px);}
+}
+
+/* Radial glow */
+.glow-bg{
+  position:absolute;
+  width:600px;
+  height:600px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,26,26,0.12) 0%, transparent 70%);
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  animation:breathe 4s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{transform:translate(-50%,-50%) scale(1);}
+  50%{transform:translate(-50%,-50%) scale(1.15);}
+}
+
+/* Floating particles */
+.particle{
+  position:absolute;
+  width:3px;height:3px;
+  background:var(--red);
+  border-radius:50%;
+  animation:rise linear infinite;
+  opacity:0;
+}
+@keyframes rise{
+  0%{transform:translateY(100vh);opacity:0.6;}
+  100%{transform:translateY(-10vh);opacity:0;}
+}
+
+/* Heart */
+.heart-wrap{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  cursor:pointer;
+  transition:transform 0.3s;
+}
+.heart-wrap:hover{transform:scale(1.05);}
+
+.heart{
+  font-size:90px;
+  animation:beat 1.4s ease-in-out infinite;
+  filter:drop-shadow(0 0 20px var(--red));
+  display:block;
+}
+@keyframes beat{
+  0%,100%{transform:scale(1);}
+  14%{transform:scale(1.25);}
+  28%{transform:scale(1);}
+  42%{transform:scale(1.15);}
+  56%{transform:scale(1);}
+}
+
+.heart-label{
+  font-family:'Orbitron',monospace;
+  font-size:22px;
+  font-weight:700;
+  letter-spacing:4px;
+  color:var(--red);
+  text-shadow:0 0 20px var(--red);
+}
+.heart-sub{
+  font-size:13px;
+  color:rgba(255,255,255,0.45);
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+
+/* Card */
+.card{
+  position:absolute;
+  width:360px;
+  padding:36px 32px;
+  border-radius:24px;
+  background:var(--glass);
+  backdrop-filter:blur(30px);
+  border:1px solid var(--border);
+  box-shadow:0 0 60px rgba(255,26,26,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+  text-align:center;
+  z-index:10;
+  bottom:-600px;
+  transition:bottom 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card.active{bottom:50%;transform:translateY(50%);}
+
+.card h2{
+  font-family:'Orbitron',monospace;
+  font-size:20px;
+  letter-spacing:3px;
+  color:white;
+  margin-bottom:8px;
+}
+.card p{
+  font-size:13px;
+  color:rgba(255,255,255,0.4);
+  margin-bottom:24px;
+  letter-spacing:1px;
+}
+
+.input-group{
+  position:relative;
+  margin-bottom:14px;
+}
+.input-group input{
+  width:100%;
+  padding:13px 16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(255,255,255,0.05);
+  color:white;
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  outline:none;
+  transition:border-color 0.3s, box-shadow 0.3s;
+}
+.input-group input::placeholder{color:rgba(255,255,255,0.3);}
+.input-group input:focus{
+  border-color:rgba(255,26,26,0.6);
+  box-shadow:0 0 20px rgba(255,26,26,0.15);
+}
+
+.btn{
+  width:100%;
+  padding:14px;
+  margin-top:8px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(135deg, #ff1a1a, #cc0000);
+  color:white;
+  font-family:'Orbitron',monospace;
+  font-size:13px;
+  letter-spacing:2px;
+  cursor:pointer;
+  box-shadow:0 0 30px rgba(255,26,26,0.4);
+  transition:transform 0.2s, box-shadow 0.2s;
+}
+.btn:hover{
+  transform:scale(1.02);
+  box-shadow:0 0 40px rgba(255,26,26,0.6);
+}
+.btn:active{transform:scale(0.98);}
+
+.close-btn{
+  position:absolute;
+  top:14px;right:16px;
+  background:none;border:none;
+  color:rgba(255,255,255,0.3);
+  font-size:20px;cursor:pointer;
+  transition:color 0.2s;
+  width:auto;margin:0;padding:4px 8px;
+  border-radius:6px;
+}
+.close-btn:hover{color:white;}
+
+.signup-link{
+  margin-top:16px;
+  font-size:12px;
+  color:rgba(255,255,255,0.4);
+}
+.signup-link a{
+  color:var(--red);
+  text-decoration:none;
+  cursor:pointer;
+  transition:color 0.2s;
+}
+.signup-link a:hover{
+  color:rgba(255,26,26,0.8);
+}
+
+.error-msg{
+  color:#ff6666;
+  font-size:12px;
+  margin-bottom:8px;
+  min-height:14px;
+}
+</style>
+</head>
+<body>
+
+<div class="grid"></div>
+<div class="glow-bg"></div>
+
+<!-- Heart entrance -->
+<div class="heart-wrap" id="heartWrap" onclick="openLogin()">
+  <span class="heart">❤️</span>
+  <span class="heart-label">LIFELINE</span>
+  <span class="heart-sub">Sign In</span>
+</div>
+
+<!-- Login Card -->
+<div id="loginCard" class="card">
+  <button class="close-btn" onclick="closeLogin()">✕</button>
+  <h2>LOGIN</h2>
+  <p>Access your LifeLine account</p>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="input-group">
+    <input id="email" type="email" placeholder="Email address" autocomplete="off">
+  </div>
+  <div class="input-group">
+    <input id="password" type="password" placeholder="Password">
+  </div>
+  <button class="btn" onclick="performLogin()" id="loginBtn">LOGIN →</button>
+  <div class="signup-link">
+    Don't have account? <a onclick="goToSignup()">Create one</a>
+  </div>
+</div>
+
+<script src="/static/integration-helper.js"></script>
+<script>
+// Generate particles
+for(let i=0;i<60;i++){
+  const p=document.createElement('div');
+  p.className='particle';
+  p.style.left=Math.random()*100+'vw';
+  p.style.animationDuration=(6+Math.random()*8)+'s';
+  p.style.animationDelay=Math.random()*8+'s';
+  p.style.width=p.style.height=(1+Math.random()*3)+'px';
+  document.body.appendChild(p);
+}
+
+function openLogin(){
+  document.getElementById('loginCard').classList.add('active');
+  document.getElementById('heartWrap').style.opacity='0';
+  document.getElementById('heartWrap').style.pointerEvents='none';
+}
+
+function closeLogin(){
+  document.getElementById('loginCard').classList.remove('active');
+  document.getElementById('heartWrap').style.opacity='1';
+  document.getElementById('heartWrap').style.pointerEvents='auto';
+}
+
+async function performLogin(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errorMsg = document.getElementById('errorMsg');
+  const btn = document.getElementById('loginBtn');
+  
+  errorMsg.textContent = '';
+  
+  if(!email || !password){
+    errorMsg.textContent = 'Please fill all fields';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'LOGGING IN...';
+  
+  const result = await login(email, password);
+  
+  if(result.success){
+    btn.textContent = 'SUCCESS ✓';
+    btn.style.background='linear-gradient(135deg,#00aa00,#008800)';
+    setTimeout(() => {
+      redirectToDashboard();
+    }, 1000);
+  } else {
+    errorMsg.textContent = result.error || 'Login failed';
+    btn.disabled = false;
+    btn.textContent = 'LOGIN →';
+  }
+}
+
+function goToSignup(){
+  window.location.href = 'signup.html';
+}
+</script>
+</body>
+</html>

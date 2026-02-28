@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEDIALERT — Emergency SOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+  :root {
+    --red: #ff1a1a;
+    --red-dim: #8b0000;
+    --green: #00ff88;
+    --amber: #ffaa00;
+    --bg: #030508;
+    --panel: #0a0e15;
+    --card: #111827;
+    --border: rgba(255,26,26,0.2);
+    --text: #e0e8f0;
+    --dim: #6b7280;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+    pointer-events:none;
+    z-index:1000;
+  }
+
+  header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:900; color:var(--red); letter-spacing:3px; text-shadow:0 0 15px rgba(255,26,26,0.5); }
+  .logo span { color:var(--text); }
+  .user-badge { font-size:13px; color:var(--dim); font-weight:600; letter-spacing:1px; }
+
+  .main-wrap { width:100%; max-width:480px; padding:24px 20px; display:flex; flex-direction:column; gap:24px; }
+
+  /* STATUS CARD */
+  .status-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .status-pulse { width:10px; height:10px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse-dot 2s infinite; flex-shrink:0; }
+  @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.3} }
+  .status-text { font-size:13px; font-weight:600; color:var(--green); letter-spacing:1px; }
+  .status-sub { font-size:11px; color:var(--dim); }
+
+  /* SOS SECTION */
+  .sos-section { display:flex; flex-direction:column; align-items:center; gap:20px; padding:12px 0; }
+
+  .sos-label {
+    font-family:'Orbitron',sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:3px;
+    color:var(--dim);
+    text-align:center;
+  }
+
+  .sos-ring-container {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(255,26,26,0.4);
+    animation: ring-expand 2s ease-out infinite;
+  }
+  .ring:nth-child(1) { width:260px; height:260px; animation-delay:0s; }
+  .ring:nth-child(2) { width:260px; height:260px; animation-delay:0.6s; }
+  .ring:nth-child(3) { width:260px; height:260px; animation-delay:1.2s; }
+
+  @keyframes ring-expand {
+    0% { transform:scale(0.7); opacity:0.8; }
+    100% { transform:scale(1.4); opacity:0; }
+  }
+
+  .sos-btn {
+    position: relative;
+    z-index: 2;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #8b0000, #ff1a1a, #ff4444, #ff1a1a, #8b0000);
+    border: 4px solid rgba(255,255,255,0.15);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 0 40px rgba(255,26,26,0.4), 0 0 80px rgba(255,26,26,0.15), inset 0 0 30px rgba(0,0,0,0.5);
+    transition: transform 0.1s, box-shadow 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  .sos-btn:active, .sos-btn.pressing {
+    transform: scale(0.96);
+    box-shadow: 0 0 60px rgba(255,26,26,0.7), 0 0 120px rgba(255,26,26,0.3), inset 0 0 30px rgba(0,0,0,0.5);
+  }
+
+  .sos-icon { font-size: 44px; pointer-events: none; }
+  .sos-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(255,255,255,0.5);
+    pointer-events: none;
+  }
+  .sos-hint { font-size:12px; color:rgba(255,255,255,0.6); font-weight:600; pointer-events:none; }
+
+  /* COUNTDOWN OVERLAY */
+  #countdownOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    animation: emergency-bg 0.5s infinite;
+  }
+  #countdownOverlay.show { display:flex; }
+  @keyframes emergency-bg {
+    0%,100%{ background:#000; }
+    50%{ background:#1a0000; }
+  }
+
+  .cd-label {
+    font-family:'Orbitron',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:4px;
+    color:rgba(255,26,26,0.8);
+    text-align:center;
+    animation: flicker 1s infinite;
+  }
+  @keyframes flicker { 0%,100%{opacity:1}50%{opacity:0.5} }
+
+  .cd-number {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 160px;
+    font-weight: 900;
+    color: var(--red);
+    line-height: 1;
+    text-shadow: 0 0 60px var(--red), 0 0 120px rgba(255,26,26,0.5);
+    animation: cd-pulse 1s ease-in-out infinite;
+  }
+  @keyframes cd-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+
+  .cd-sub {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .cd-cancel {
+    margin-top: 20px;
+    padding: 14px 40px;
+    background: transparent;
+    border: 2px solid var(--dim);
+    border-radius: 4px;
+    color: var(--dim);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cd-cancel:hover { border-color:var(--text); color:var(--text); }
+
+  /* SUCCESS POPUP */
+  #successPopup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    background: rgba(0,0,0,0.85);
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  #successPopup.show { display:flex; }
+
+  .popup-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    width: 340px;
+    max-width: 90vw;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(255,26,26,0.2);
+    animation: popup-in 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popup-in { from{opacity:0;transform:scale(0.7)} to{opacity:1;transform:scale(1)} }
+
+  .popup-check { font-size:56px; animation:check-bounce 0.6s ease; }
+  @keyframes check-bounce { 0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)} }
+
+  .popup-title {
+    font-family:'Orbitron',sans-serif;
+    font-size:18px;
+    font-weight:900;
+    color:#fff;
+    letter-spacing:2px;
+    margin:12px 0 6px;
+  }
+
+  .popup-sub { font-size:13px; color:var(--dim); margin-bottom:24px; }
+
+  .notif-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border-left: 4px solid var(--red);
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: translateX(-20px);
+    text-align: left;
+  }
+  .notif-item.slide { animation: notif-slide 0.4s ease forwards; }
+  @keyframes notif-slide { to{opacity:1;transform:translateX(0)} }
+
+  .notif-item:nth-child(1) { border-left-color:var(--red); animation-delay:0.1s; }
+  .notif-item:nth-child(2) { border-left-color:var(--amber); animation-delay:0.3s; }
+  .notif-item:nth-child(3) { border-left-color:var(--green); animation-delay:0.5s; }
+
+  .notif-icon { font-size:24px; }
+  .notif-text { flex:1; }
+  .notif-title-text { font-size:14px; font-weight:700; }
+  .notif-desc { font-size:11px; color:var(--dim); margin-top:2px; }
+
+  .popup-ok {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--red-dim), var(--red));
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 20px rgba(255,26,26,0.3);
+  }
+  .popup-ok:hover { box-shadow: 0 0 30px rgba(255,26,26,0.5); }
+
+  /* USER INFO */
+  .info-panel { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 20px; }
+  .info-title { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; color:var(--dim); margin-bottom:12px; }
+  .info-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; }
+  .info-row:last-child { border-bottom:none; }
+  .info-label { color:var(--dim); font-weight:600; }
+  .info-val { color:var(--text); font-weight:700; font-family:'Orbitron',sans-serif; font-size:12px; }
+
+  /* CHAT */
+  .chat-panel { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .chat-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+  .chat-title { font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; color:var(--text); }
+  .chat-body { padding:16px 18px; max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+  .chat-msg { padding:10px 14px; border-radius:8px; font-size:13px; font-weight:600; max-width:85%; }
+  .chat-msg.user { background:rgba(255,26,26,0.15); border:1px solid rgba(255,26,26,0.2); align-self:flex-end; }
+  .chat-msg.bot { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); align-self:flex-start; }
+  .chat-input-row { display:flex; gap:0; border-top:1px solid var(--border); }
+  .chat-input { flex:1; background:transparent; border:none; padding:12px 16px; color:var(--text); font-family:'Rajdhani',sans-serif; font-size:14px; outline:none; }
+  .chat-input::placeholder { color:var(--dim); }
+  .chat-send { padding:12px 18px; background:var(--red); border:none; color:#fff; font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; cursor:pointer; letter-spacing:1px; transition:background 0.2s; }
+  .chat-send:hover { background:#cc0000; }
+
+  ::-webkit-scrollbar { width:3px; }
+  ::-webkit-scrollbar-thumb { background:rgba(255,26,26,0.3); border-radius:2px; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="logo">MEDI<span>ALERT</span></div>
+  <div class="user-badge" id="userBadge">USER DASHBOARD</div>
+</header>
+
+<div class="main-wrap">
+
+  <!-- STATUS -->
+  <div class="status-card">
+    <div class="status-pulse"></div>
+    <div>
+      <div class="status-text">MONITORING ACTIVE</div>
+      <div class="status-sub">Connected to emergency network · Tiruchirappalli, TN <span id="aiStatus" style="margin-left:10px;color:var(--green);font-weight:600">AI: Active</span></div>
+    </div>
+  </div>
+
+  <!-- SOS SECTION -->
+  <div class="sos-section">
+    <div class="sos-label">PRESS & HOLD 5s TO ACTIVATE</div>
+    <div class="sos-ring-container">
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <div class="sos-btn" id="sosBtn">
+        <div class="sos-icon">🆘</div>
+        <div class="sos-text">SOS</div>
+        <div class="sos-hint">HOLD 5 SECONDS</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--dim);text-align:center;max-width:280px;line-height:1.6">
+      Press and hold the SOS button for 5 seconds to send an emergency alert to the hospital and your family members.
+    </div>
+  </div>
+
+  <!-- INFO PANEL -->
+  <div class="info-panel">
+    <div class="info-title">EMERGENCY PROFILE</div>
+    <div class="info-row"><span class="info-label">Name</span><span class="info-val" id="profileName">—</span></div>
+    <div class="info-row"><span class="info-label">Phone</span><span class="info-val" id="profilePhone">—</span></div>
+    <div class="info-row"><span class="info-label">Blood Group</span><span class="info-val" id="profileBlood" style="color:var(--red)">—</span></div>
+    <div class="info-row"><span class="info-label">Address</span><span class="info-val" id="profileAddress">—</span></div>
+    <div class="info-row"><span class="info-label">Location</span><span class="info-val" id="locationVal">DETECTING...</span> <button onclick="requestLocationPermission()" style="padding:3px 8px;font-size:11px;cursor:pointer;background:rgba(136,68,255,0.2);border:1px solid rgba(136,68,255,0.5);color:white;border-radius:3px;">📍 Request</button></div>
+    <div class="info-row"><span class="info-label">Nearest Hospital</span><span class="info-val" style="color:var(--green)" id="nearestHospital">—</span> <button onclick="showNearbyHospitals()" style="padding:3px 8px;font-size:11px;cursor:pointer;background:rgba(0,255,136,0.2);border:1px solid rgba(0,255,136,0.5);color:white;border-radius:3px;">🏥 View</button></div>
+    <div class="info-row"><span class="info-label">AI Suggestion</span><span class="info-val" style="color:var(--green)" id="aiSuggestion">ACTIVE</span></div>
+  </div>
+
+  <!-- MAP SECTION -->
+  <div class="map-holder" style="width:100%;height:300px;margin:20px 0;">
+    <div id="map" style="width:100%;height:100%;"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <span>🤖</span>
+      <span class="chat-title">MEDICAL ASSISTANT</span>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-msg bot">Hello! I'm your emergency medical assistant. Describe your symptoms or ask me a question.</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Describe symptoms..." onkeydown="if(event.key==='Enter')sendChat()" />
+      <button class="chat-send" onclick="sendChat()">SEND</button>
+    </div>
+  </div>
+</div>
+
+<!-- COUNTDOWN OVERLAY -->
+<div id="countdownOverlay">
+  <div class="cd-label">⚠ EMERGENCY ACTIVATION ⚠</div>
+  <div class="cd-number" id="cdNum">5</div>
+  <div class="cd-sub">RELEASE TO CANCEL</div>
+  <button class="cd-cancel" onclick="cancelSOS()">✕ CANCEL</button>
+</div>
+
+<!-- SUCCESS POPUP -->
+<div id="successPopup">
+  <div class="popup-card">
+    <div class="popup-check">✅</div>
+    <div class="popup-title">ALERT SENT</div>
+    <div class="popup-sub">Help is on the way</div>
+
+    <div class="notif-item" id="n1">
+      <div class="notif-icon">🏥</div>
+      <div class="notif-text">
+        <div class="notif-title-text">Hospital Notified</div>
+        <div class="notif-desc">Government Hospital — Alert received</div>
+      </div>
+    </div>
+    <div class="notif-item" id="n2">
+      <div class="notif-icon">👨‍👩‍👧</div>
+      <div class="notif-text">
+        <div class="notif-title-text">Family Notified</div>
+        <div class="notif-desc">Emergency SMS sent to registered contacts</div>
+      </div>
+    </div>
+    <div class="notif-item" id="n3">
+      <div class="notif-icon">🚑</div>
+      <div class="notif-text">
+        <div class="notif-title-text">Ambulance Dispatched</div>
+        <div class="notif-desc">ETA ~8 minutes · AMB-01 en route</div>
+      </div>
+    </div>
+
+    <button class="popup-ok" onclick="closePopup()">GOT IT</button>
+  </div>
+</div>
+
+<script src="/static/integration-helper.js"></script>
+<script src="/static/map.js"></script>
+<script>
+  // USER INFO
+  const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+  const name = profile.name || localStorage.getItem('name') || 'User';
+  const phone = profile.phone || '-';
+  const blood = profile.blood || '-';
+  const address = profile.address || '-';
+
+  document.getElementById('userBadge').textContent = name.toUpperCase();
+  document.getElementById('profileName').textContent = name.toUpperCase();
+  document.getElementById('profilePhone').textContent = phone;
+  document.getElementById('profileBlood').textContent = blood;
+  document.getElementById('profileAddress').textContent = address;
+
+  // LOCATION: track device & send to server when available
+  let lastCoords = null;
+  
+  function requestLocationPermission(){
+    if(!navigator.geolocation) {
+      alert('⚠️ Geolocation not supported in this browser. Using fallback location.');
+      document.getElementById('locationVal').textContent = 'KSRC (DEFAULT)';
+      return;
+    }
+    
+    console.log('🔍 Requesting location permission...');
+    document.getElementById('locationVal').textContent = 'REQUESTING...';
+    
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        lastCoords = { lat, lon };
+        console.log('✅ GPS LOCATION GRANTED:', lat.toFixed(6), lon.toFixed(6));
+        document.getElementById('locationVal').textContent = lat.toFixed(4)+', '+lon.toFixed(4)+' ✓ GPS';
+        const user = getCurrentUser();
+        if(user && user.id){
+          try{ sendLocation(user.id, lat, lon); }catch(e){}
+        }
+      },
+      err => {
+        console.error('❌ Location permission error:', err.code, err.message);
+        if(err.code === 1) {
+          alert('❌ Location permission denied.\n\nPlease enable location in:\n• Browser settings\n• Device settings\n\nUsing fallback location for alerts.');
+          document.getElementById('locationVal').textContent = 'PERMISSION DENIED';
+        } else if(err.code === 2) {
+          alert('⚠️ Location service unavailable.\n\nUsing fallback location for alerts.');
+          document.getElementById('locationVal').textContent = 'LOCATION UNAVAILABLE';
+        } else {
+          document.getElementById('locationVal').textContent = 'KSRC (DEFAULT)';
+        }
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    );
+  }
+  
+  function startLocationTracking(){
+    if(!navigator.geolocation) {
+      document.getElementById('locationVal').textContent = 'Tiruchirappalli, TN';
+      return;
+    }
+    
+    console.log('📍 Starting automatic location tracking...');
+    
+    // ⭐ IMMEDIATELY request location on page load
+    requestLocationPermission();
+
+    // watch for updates and push to server when changed
+    navigator.geolocation.watchPosition(pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      lastCoords = { lat, lon };
+      console.log('📍 Current Location Updated:', lat.toFixed(6), lon.toFixed(6));
+      document.getElementById('locationVal').textContent = lat.toFixed(4)+', '+lon.toFixed(4)+' ✓';
+      const user = getCurrentUser();
+      if(user && user.id){
+        try{ sendLocation(user.id, lat, lon); }catch(e){}
+      }
+      // refresh nearest hospital & AI suggestion after every location update
+      try{
+        getNearbyHospitals(lat, lon).then(h => {
+          if(h.success && Array.isArray(h.data) && h.data.length>0){
+            document.getElementById('nearestHospital').textContent = h.data[0].name + ' ✓';
+          }
+        });
+        getHospitalRecommendation(lat, lon).then(aiRes => {
+          if(aiRes && aiRes.success && aiRes.data && (aiRes.data.recommendation || aiRes.data.message)){
+            document.getElementById('aiSuggestion').textContent = aiRes.data.recommendation || aiRes.data.message;
+            document.getElementById('aiStatus').textContent = 'AI: Active';
+          } else if(aiRes && aiRes.success && aiRes.data && aiRes.data.available === false){
+            document.getElementById('aiSuggestion').textContent = 'AI service not available';
+            document.getElementById('aiStatus').textContent = 'AI: Unavailable';
+          } else {
+            document.getElementById('aiSuggestion').textContent = 'AI active — no suggestion';
+            document.getElementById('aiStatus').textContent = 'AI: Active';
+          }
+        }).catch(err=>{
+          console.warn('AI recommendation error', err);
+          document.getElementById('aiSuggestion').textContent = 'AI unreachable';
+          document.getElementById('aiStatus').textContent = 'AI: Offline';
+        });
+      }catch(_){/*ignore*/}
+    }, err => {
+      console.warn('📍 Location watch error (non-critical):', err.code);
+    }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 8000 });
+  }
+  startLocationTracking();
+
+  // if user was redirected after SOS, show map at last known coords instead of default
+  try {
+    const saved = localStorage.getItem('lastCoords');
+    if (saved) {
+      const obj = JSON.parse(saved);
+      if (obj && obj.lat && obj.lon) {
+        console.log('Restoring lastCoords from storage:', obj);
+        // call map handler directly
+        handleHospitalsForLocation(parseFloat(obj.lat), parseFloat(obj.lon));
+      }
+      // clear after use so subsequent visits don't always restore
+      localStorage.removeItem('lastCoords');
+    }
+  } catch(e){ console.warn('failed to restore lastCoords', e); }
+
+  // NEARBY HOSPITALS FUNCTION
+  async function showNearbyHospitals(){
+    const user = getCurrentUser();
+    if(!user || !user.id){
+      alert('Please login first');
+      return;
+    }
+    
+    // ⭐ ALWAYS use current GPS location if available
+    let lat = 10.7905, lon = 78.7047;  // Default: Tiruchirappalli
+    let locSource = 'DEFAULT';
+    if(lastCoords){
+      lat = parseFloat(lastCoords.lat);
+      lon = parseFloat(lastCoords.lon);
+      locSource = 'GPS';
+    }
+    
+    console.log('🏥 Fetching nearby hospitals for:', lat, lon, `(${locSource})`);
+    console.log('API_BASE:', API_BASE);
+    
+    try{
+      const url = `${API_BASE}/hospitals/nearby?lat=${lat}&lon=${lon}`;
+      console.log('Fetching from:', url);
+      
+      const res = await getNearbyHospitals(lat, lon);
+      console.log('Nearby hospitals response:', res);
+      
+      if(!res.success){
+        alert('❌ Error: ' + (res.error || 'Unknown error') + '\n\nUsing: ' + locSource + ' location');
+        return;
+      }
+      
+      if(!Array.isArray(res.data) || res.data.length === 0){
+        alert('⚠️ No hospitals found in this area\n\nUsing: ' + locSource + ' location (' + lat.toFixed(2) + ', ' + lon.toFixed(2) + ')');
+        return;
+      }
+      
+      let msg = '🏥 NEARBY HOSPITALS (' + locSource + ')\n' + '—'.repeat(40) + '\n\n';
+      res.data.slice(0, 5).forEach((h, i) => {
+        msg += `${i+1}. ${h.name}\n   📍 ${parseFloat(h.distance).toFixed(2)} km\n\n`;
+      });
+      alert(msg);
+      
+    } catch(e){
+      console.error('❌ Error fetching hospitals:', e);
+      alert('Error: ' + e.message);
+    }
+  }
+
+  // SOS LOGIC
+  let holdTimer=null;
+  let countTimer=null;
+  let count=5;
+  let holding=false;
+  const sosBtn = document.getElementById('sosBtn');
+  const overlay = document.getElementById('countdownOverlay');
+
+  async function fireAlert(){
+    holding=false;
+    overlay.classList.remove('show');
+    sosBtn.classList.remove('pressing');
+    
+    console.log('🚨 FIREALING ALERT...');
+    
+    const user = getCurrentUser();
+    console.log('👤 User:', user);
+    
+    if(!user || !user.id){
+      console.error('❌ NO USER FOUND');
+      alert('Not logged in - please login first');
+      return;
+    }
+
+    // ⭐ USE CURRENT GPS LOCATION IF AVAILABLE
+    let lat = '10.7905', lon = '78.7047';  // Default: Tiruchirappalli
+    let locSource = 'DEFAULT';
+    if(lastCoords){ 
+      lat = String(lastCoords.lat); 
+      lon = String(lastCoords.lon);
+      locSource = 'GPS';
+      console.log('📍 Using GPS coords:', lat, lon);
+    } else {
+      console.warn('⚠️ GPS unavailable, using fallback location: Tiruchirappalli');
+    }
+
+    try{
+      console.log('📤 Sending location update...');
+      try{ await sendLocation(user.id, lat, lon); }catch(e){
+        console.error('⚠️ sendLocation failed:', e);
+      }
+      
+      console.log('🚨 Sending emergency alert (' + locSource + ')...');
+      const result = await sendEmergencyAlert(user.id, lat, lon);
+      console.log('✅ Alert response:', result);
+      
+      if(!result.success){
+        console.error('❌ Alert failed:', result.error);
+        alert('Failed to send alert: ' + (result.error || 'Unknown error'));
+        return;
+      }
+
+      // immediately query backend for nearby hospitals and update UI
+      console.log('🏥 Fetching nearby hospitals from current location...');
+      try{
+        const hospRes = await getNearbyHospitals(lat, lon);
+        console.log('Hospital response:', hospRes);
+        if(hospRes.success && Array.isArray(hospRes.data) && hospRes.data.length>0){
+          document.getElementById('nearestHospital').textContent = hospRes.data[0].name;
+          console.log('✅ Nearest hospital:', hospRes.data[0].name);
+          try{
+            localStorage.setItem('nearestHospital', JSON.stringify(hospRes.data[0]));
+            localStorage.setItem('lastCoords', JSON.stringify({lat: lat, lon: lon}));
+            console.log('✅ Saved nearestHospital and lastCoords to localStorage');
+          }catch(e){ console.warn('Failed to save alert context', e); }
+        }
+      }catch(e){
+        console.error('⚠️ Hospital lookup failed:', e);
+      }
+      
+      try{
+        console.log('🤖 Getting AI recommendation...');
+        const aiRes = await getHospitalRecommendation(lat, lon);
+        console.log('AI response:', aiRes);
+        if(aiRes && aiRes.success && aiRes.data && (aiRes.data.recommendation || aiRes.data.message)){
+          document.getElementById('aiSuggestion').textContent = aiRes.data.recommendation || aiRes.data.message;
+          document.getElementById('aiStatus').textContent = 'AI: Active';
+          console.log('✅ AI suggestion:', aiRes.data.recommendation || aiRes.data.message);
+        } else if(aiRes && aiRes.success && aiRes.data && aiRes.data.available === false){
+          document.getElementById('aiSuggestion').textContent = 'AI service not available';
+          document.getElementById('aiStatus').textContent = 'AI: Unavailable';
+        } else {
+          document.getElementById('aiSuggestion').textContent = 'AI active — no suggestion';
+          document.getElementById('aiStatus').textContent = 'AI: Active';
+        }
+      }catch(e){
+        console.error('⚠️ AI recommendation failed:', e);
+      }
+
+    } catch(e){
+      console.error('❌ CRITICAL ERROR:', e);
+      alert('Error sending alert: ' + e.message);
+      return;
+    }
+    
+    console.log('✅ ALERT COMPLETE!');
+    showSuccess();
+    // After showing success, navigate to dashboard so user info + map reflect latest alert
+    try{
+      setTimeout(()=>{
+        // use replace so back button doesn't return to alert page
+        window.location.replace('user.html');
+      }, 1200);
+    }catch(e){ console.warn('Redirect to dashboard failed', e); }
+  }
+
+  function showSuccess(){
+    const popup = document.getElementById('successPopup');
+    popup.classList.add('show');
+    ['n1','n2','n3'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('slide');
+      void el.offsetWidth;
+      el.classList.add('slide');
+    });
+  }
+
+  function closePopup(){
+    document.getElementById('successPopup').classList.remove('show');
+  }
+
+  // hold events for 5-second activation
+  let timerActive = false;
+  function startHold(){
+    if(timerActive){
+      // second press during countdown cancels
+      cancelSOS();
+      return;
+    }
+    timerActive = true;
+    count=5;
+    document.getElementById('cdNum').textContent=count;
+    overlay.classList.add('show');
+    sosBtn.classList.add('pressing');
+    countTimer=setInterval(()=>{
+      count--;
+      document.getElementById('cdNum').textContent=count;
+      if(count<=0){
+        clearInterval(countTimer);
+        timerActive = false;
+        fireAlert();
+      }
+    },1000);
+  }
+  function cancelSOS(){
+    if(!timerActive) return;
+    timerActive=false;
+    clearInterval(countTimer);
+    overlay.classList.remove('show');
+    sosBtn.classList.remove('pressing');
+    count=5;
+  }
+
+  sosBtn.addEventListener('mousedown', startHold);
+  sosBtn.addEventListener('touchstart', e=>{e.preventDefault(); startHold();});
+
+  // CHAT
+  async function sendChat(){
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if(!msg) return;
+
+    addChatMsg(msg, 'user');
+    input.value = '';
+
+    try{
+      const res = await fetch('http://182.18.2.8:8000/chat', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({message: msg})
+      });
+      const data = await res.json();
+      addChatMsg(data.reply, 'bot');
+    } catch(e){
+      addChatMsg('Unable to connect to server. If this is an emergency, press SOS immediately.', 'bot');
+    }
+  }
+
+  function addChatMsg(text, type){
+    const body = document.getElementById('chatBody');
+    const div = document.createElement('div');
+    div.className = 'chat-msg '+type;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+
+</script>
+</body>
+</html>

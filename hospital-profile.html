@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LifeLine — Hospital Profile</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --blue:#00aaff;
+  --blue-dim:rgba(0,170,255,0.1);
+  --glass:rgba(255,255,255,0.04);
+  --border:rgba(255,255,255,0.08);
+}
+
+body{
+  min-height:100vh;
+  background:#060a0f;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:'DM Sans',sans-serif;
+  color:white;
+  overflow:hidden;
+  padding:20px;
+}
+
+/* Grid */
+.grid{
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,170,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(0,170,255,0.04) 1px, transparent 1px);
+  background-size:50px 50px;
+  animation:gridScroll 25s linear infinite;
+}
+@keyframes gridScroll{to{transform:translateY(50px);}}
+
+/* Blue glow */
+.glow{
+  position:fixed;
+  width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,170,255,0.08) 0%,transparent 65%);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  animation:breathe 5s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{transform:translate(-50%,-50%) scale(1);}
+  50%{transform:translate(-50%,-50%) scale(1.1);}
+}
+
+/* Card */
+.card{
+  position:relative;z-index:2;
+  width:420px;
+  padding:44px 40px;
+  border-radius:30px;
+  background:var(--glass);
+  backdrop-filter:blur(30px);
+  border:1px solid var(--border);
+  box-shadow:0 0 80px rgba(0,170,255,0.08), inset 0 1px 0 rgba(255,255,255,0.05);
+  animation:fadeUp 0.8s cubic-bezier(0.34,1.4,0.64,1);
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(40px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* Header */
+.card-head{text-align:center;margin-bottom:32px;}
+.cross-icon{
+  width:72px;height:72px;
+  border-radius:20px;
+  background:rgba(0,170,255,0.1);
+  border:1px solid rgba(0,170,255,0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:34px;
+  margin:0 auto 16px;
+  box-shadow:0 0 30px rgba(0,170,255,0.15);
+}
+.card-head h2{
+  font-family:'Orbitron',monospace;
+  font-size:17px;
+  letter-spacing:3px;
+  margin-bottom:6px;
+}
+.card-head p{
+  font-size:12px;
+  color:rgba(255,255,255,0.3);
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+
+/* Section label */
+.section-label{
+  font-size:10px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:rgba(0,170,255,0.5);
+  margin:20px 0 10px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{
+  content:'';flex:1;
+  height:1px;background:rgba(0,170,255,0.15);
+}
+
+/* Input group */
+.input-group{
+  position:relative;
+  margin-bottom:12px;
+}
+.input-icon{
+  position:absolute;
+  left:14px;top:50%;transform:translateY(-50%);
+  font-size:16px;
+  pointer-events:none;
+}
+.input-group input,
+.input-group select,
+.input-group textarea{
+  width:100%;
+  padding:13px 14px 13px 42px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(255,255,255,0.04);
+  color:white;
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  outline:none;
+  transition:border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+.input-group select option{background:#0a0f1a;color:white;}
+.input-group input::placeholder,
+.input-group textarea::placeholder{color:rgba(255,255,255,0.2);}
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus{
+  border-color:rgba(0,170,255,0.5);
+  box-shadow:0 0 20px rgba(0,170,255,0.1);
+  background:rgba(0,170,255,0.04);
+}
+
+.input-group textarea{
+  height:80px;
+  resize:none;
+  padding-top:12px;
+}
+
+/* IP field special */
+.ip-row{
+  display:flex;gap:8px;
+  margin-bottom:12px;
+}
+.ip-row .input-group{flex:1;margin-bottom:0;}
+.ip-label{
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.2);
+  text-align:center;
+  margin-top:4px;
+}
+
+/* Status badge */
+.status-row{
+  display:flex;gap:10px;
+  margin-bottom:12px;
+}
+.status-opt{
+  flex:1;
+  padding:11px 8px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);
+  color:rgba(255,255,255,0.4);
+  font-size:12px;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.2s;
+  letter-spacing:1px;
+}
+.status-opt.active-opt{
+  border-color:rgba(0,255,120,0.4);
+  background:rgba(0,255,120,0.08);
+  color:#00ff88;
+  box-shadow:0 0 15px rgba(0,255,120,0.1);
+}
+.status-opt.inactive-opt{
+  border-color:rgba(255,100,0,0.4);
+  background:rgba(255,100,0,0.08);
+  color:#ff6400;
+}
+
+/* Submit btn */
+.submit-btn{
+  width:100%;
+  padding:15px;
+  margin-top:24px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,#0088cc,#005b99);
+  color:white;
+  font-family:'Orbitron',monospace;
+  font-size:13px;
+  letter-spacing:2px;
+  cursor:pointer;
+  box-shadow:0 0 30px rgba(0,136,204,0.3);
+  transition:transform 0.2s,box-shadow 0.2s;
+}
+.submit-btn:hover{
+  transform:scale(1.02);
+  box-shadow:0 0 50px rgba(0,136,204,0.5);
+}
+.submit-btn:active{transform:scale(0.98);}
+
+.back-link{
+  display:block;
+  text-align:center;
+  margin-top:16px;
+  font-size:12px;
+  color:rgba(255,255,255,0.25);
+  cursor:pointer;
+  letter-spacing:1px;
+  transition:color 0.2s;
+}
+.back-link:hover{color:rgba(255,255,255,0.5);}
+
+/* Required star */
+.req{color:var(--blue);margin-left:3px;}
+</style>
+</head>
+<body>
+
+<div class="grid"></div>
+<div class="glow"></div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="cross-icon">🏥</div>
+    <h2>HOSPITAL PROFILE</h2>
+    <p>Register your medical facility</p>
+  </div>
+
+  <!-- Basic Info -->
+  <div class="section-label">Basic Information</div>
+
+  <div class="input-group">
+    <span class="input-icon">🏥</span>
+    <input id="hospName" type="text" placeholder="Hospital / Clinic Name *">
+  </div>
+
+  <div class="input-group">
+    <span class="input-icon">🆔</span>
+    <input id="hospId" type="text" placeholder="Registration / License Number *">
+  </div>
+
+  <div class="input-group">
+    <span class="input-icon">📞</span>
+    <input id="hospPhone" type="tel" placeholder="Emergency Contact Number *">
+  </div>
+
+  <!-- Location -->
+  <div class="section-label">Location</div>
+
+  <div class="input-group">
+    <span class="input-icon">📍</span>
+    <textarea id="hospAddress" placeholder="Full Address (Street, City, State, Pincode)"></textarea>
+  </div>
+
+  <!-- Network -->
+  <div class="section-label">Network Configuration</div>
+
+  <div class="input-group">
+    <span class="input-icon">🌐</span>
+    <input id="hospIP" type="text" placeholder="IP Address  (e.g. 192.168.1.100)" maxlength="45">
+  </div>
+
+  <div class="input-group">
+    <span class="input-icon">🔌</span>
+    <input id="hospPort" type="text" placeholder="Port Number  (e.g. 8080)" maxlength="6">
+  </div>
+
+  <!-- Status -->
+  <div class="section-label">Operational Status</div>
+  <div class="status-row">
+    <div class="status-opt active-opt" id="statusActive" onclick="setStatus('active')">✅ Active</div>
+    <div class="status-opt" id="statusBusy" onclick="setStatus('busy')">⚠️ Busy</div>
+    <div class="status-opt" id="statusOffline" onclick="setStatus('offline')">🔴 Offline</div>
+  </div>
+
+  <button class="submit-btn" onclick="saveHospital()">SAVE & OPEN DASHBOARD →</button>
+  <span class="back-link" onclick="history.back()">← Back to role selection</span>
+</div>
+
+<script>
+let selectedStatus = 'active';
+
+// If visited from map nearest-hospital marker, prefill fields
+window.addEventListener('DOMContentLoaded', ()=>{
+  try{
+    const s = localStorage.getItem('nearestHospital');
+    if(s){
+      const h = JSON.parse(s);
+      if(h.name) document.getElementById('hospName').value = h.name;
+      if(h.lat || h.lon) document.getElementById('hospAddress').value = `Coordinates: ${h.lat}, ${h.lon}`;
+      // optionally show distance in ID field for visibility
+      if(h.distance) document.getElementById('hospId').value = `Nearest dist: ${Number(h.distance).toFixed(2)} km`;
+      // clear stored nearestHospital so future visits aren't accidental
+      localStorage.removeItem('nearestHospital');
+    }
+  }catch(e){ console.error('No nearest hospital data', e); }
+});
+
+function setStatus(s){
+  selectedStatus = s;
+  document.querySelectorAll('.status-opt').forEach(el => {
+    el.classList.remove('active-opt','inactive-opt');
+    el.style.borderColor='';
+    el.style.background='';
+    el.style.color='';
+    el.style.boxShadow='';
+  });
+  const el = document.getElementById('status' + s.charAt(0).toUpperCase() + s.slice(1));
+  if(s === 'active') el.classList.add('active-opt');
+  else el.classList.add('inactive-opt');
+}
+
+function saveHospital(){
+  const name    = document.getElementById('hospName').value.trim();
+  const id      = document.getElementById('hospId').value.trim();
+  const phone   = document.getElementById('hospPhone').value.trim();
+  const address = document.getElementById('hospAddress').value.trim();
+  const ip      = document.getElementById('hospIP').value.trim();
+  const port    = document.getElementById('hospPort').value.trim();
+
+  if(!name || !phone){
+    shake(document.querySelector('.submit-btn'));
+    flashBtn('⚠ NAME & PHONE REQUIRED');
+    return;
+  }
+
+  // Basic IP validation (optional field but check format if filled)
+  if(ip && !/^[\d.:a-fA-F]+$/.test(ip)){
+    shake(document.querySelector('.submit-btn'));
+    flashBtn('⚠ INVALID IP FORMAT');
+    return;
+  }
+
+  const data = {name, id, phone, address, ip, port, status: selectedStatus};
+  localStorage.setItem('hospital', JSON.stringify(data));
+  localStorage.setItem('role','hospital');
+
+  // Transition
+  document.querySelector('.submit-btn').textContent = '✓ SAVED!';
+  document.querySelector('.submit-btn').style.background = 'linear-gradient(135deg,#00cc77,#008844)';
+  setTimeout(()=>{ window.location.href = 'hospital-home.html'; }, 600);
+}
+
+function shake(el){
+  el.style.transform = 'translateX(-6px)';
+  setTimeout(()=>el.style.transform = 'translateX(6px)',80);
+  setTimeout(()=>el.style.transform = 'translateX(-4px)',160);
+  setTimeout(()=>el.style.transform = 'translateX(0)',240);
+}
+
+function flashBtn(msg){
+  const btn = document.querySelector('.submit-btn');
+  const orig = btn.textContent;
+  const origBg = btn.style.background;
+  btn.textContent = msg;
+  btn.style.background = 'linear-gradient(135deg,#cc4400,#882200)';
+  setTimeout(()=>{
+    btn.textContent = 'SAVE & OPEN DASHBOARD →';
+    btn.style.background = '';
+  }, 1800);
+}
+</script>
+</body>
+</html>

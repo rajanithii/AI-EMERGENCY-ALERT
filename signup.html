@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LifeLine — Signup</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --red:#ff1a1a;
+  --glass:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.1);
+}
+
+body{
+  height:100vh;
+  background:#080808;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:'DM Sans',sans-serif;
+  overflow:hidden;
+  color:white;
+}
+
+/* Background */
+.grid{
+  position:absolute;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(255,26,26,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,26,26,0.05) 1px, transparent 1px);
+  background-size:50px 50px;
+  animation:gridMove 20s linear infinite;
+}
+@keyframes gridMove{
+  from{transform:translateY(0);}
+  to{transform:translateY(50px);}
+}
+
+.glow-bg{
+  position:absolute;
+  width:600px;
+  height:600px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,26,26,0.12) 0%, transparent 70%);
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* Card */
+.card{
+  width:360px;
+  padding:32px;
+  border-radius:24px;
+  background:var(--glass);
+  backdrop-filter:blur(30px);
+  border:1px solid var(--border);
+  box-shadow:0 0 60px rgba(255,26,26,0.2);
+  text-align:center;
+  z-index:2;
+}
+
+.card h2{
+  font-family:'Orbitron';
+  letter-spacing:3px;
+  margin-bottom:10px;
+}
+
+.input-group{
+  margin-bottom:12px;
+}
+
+input, select{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.05);
+  color:white;
+  outline:none;
+}
+
+input::placeholder{
+  color:rgba(255,255,255,0.4);
+}
+
+.btn{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:10px;
+  background:linear-gradient(135deg,#ff1a1a,#cc0000);
+  color:white;
+  font-family:'Orbitron';
+  cursor:pointer;
+  box-shadow:0 0 20px rgba(255,26,26,0.4);
+}
+
+.section-title{
+  margin-top:18px;
+  font-size:12px;
+  color:rgba(255,255,255,0.5);
+}
+</style>
+</head>
+
+<body>
+
+<div class="grid"></div>
+<div class="glow-bg"></div>
+
+<div class="card">
+  <h2>SIGN UP</h2>
+
+  <div class="input-group">
+    <input id="name" placeholder="Name">
+  </div>
+
+  <div class="input-group">
+    <input id="email" placeholder="Email">
+  </div>
+
+  <div class="input-group">
+    <input id="password" type="password" placeholder="Password">
+  </div>
+
+  <div class="input-group">
+    <select id="role" onchange="toggleProfileFields()">
+      <option value="user">User</option>
+      <option value="receiver">Receiver</option>
+    </select>
+  </div>
+
+  <!-- emergency profile fields collected during signup; shown only for users -->
+  <div id="profileFields">
+    <div class="input-group">
+      <input id="medical_condition" placeholder="Medical condition (required)">
+    </div>
+    <div class="input-group">
+      <input id="blood" placeholder="Blood group">
+    </div>
+    <div class="input-group">
+      <input id="address" placeholder="Address">
+    </div>
+  </div>
+
+  <button class="btn" onclick="signup()">CREATE ACCOUNT →</button>
+
+  <div class="section-title" style="margin-top: 20px; color: rgba(255,255,255,0.6);">
+    Already have an account? <a href="login-connected.html" style="color: #ff1a1a; text-decoration: none;">Login here</a>
+  </div>
+</div>
+
+<script>
+function toggleProfileFields(){
+  const role = document.getElementById('role').value;
+  const pf = document.getElementById('profileFields');
+  pf.style.display = role === 'user' ? 'block' : 'none';
+}
+
+// we will query location when the user signs up, no need to prefill
+async function signup() {
+  const name = document.getElementById('name');
+  const email = document.getElementById('email');
+  const password = document.getElementById('password');
+  const role = document.getElementById('role');
+  const medical = document.getElementById('medical_condition');
+  const blood = document.getElementById('blood');
+  const address = document.getElementById('address');
+
+  // only require profile data when role is user
+  const isUser = role.value === 'user';
+  if (!name.value || !email.value || !password.value || (isUser && !medical.value)) {
+    alert('Please fill in all required fields' + (isUser ? ' including medical condition' : ''));
+    return;
+  }
+
+  // gather coordinates fresh at signup time
+  let coords = null;
+  if (navigator.geolocation) {
+    try {
+      coords = await new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve(pos.coords),
+          () => resolve(null),
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      });
+    } catch (e) {
+      coords = null;
+    }
+  }
+
+  // if the user declined or the lookup failed, fall back to a fixed default (Trichy)
+  if (!coords) {
+    coords = { latitude: 10.9860, longitude: 78.8380 }; // Samayapuram (Trichy) default
+  }
+
+  // use dynamic base so it works whether you access via localhost, 172.17.30.23, or file://
+  const apiBase = window.location.origin ? window.location.origin + '/api' : 'http://127.0.0.1:8000/api';
+  let payload = {
+      name: name.value,
+      email: email.value,
+      password: password.value,
+      role: role.value
+  };
+    if(isUser){
+      payload.medical_condition = medical.value;
+      payload.blood = blood.value;
+      payload.address = address.value;
+    }
+
+  // attach coords if we got them
+  if (coords) {
+    payload.latitude = String(coords.latitude);
+    payload.longitude = String(coords.longitude);
+  }
+
+  let res = await fetch(`${apiBase}/signup`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+
+  let data = await res.json().catch(() => ({}));
+
+  if (res.ok) {
+    // if user role, cache profile; otherwise clear any leftover
+    if(isUser){
+      const profile = {name: name.value, medical_condition: medical.value, blood: blood.value, address: address.value};
+      localStorage.setItem('profile', JSON.stringify(profile));
+    } else {
+      localStorage.removeItem('profile');
+    }
+
+    alert(data.message || "Account created! Redirecting to login...");
+    setTimeout(() => {
+      window.location.href = 'login-connected.html';
+    }, 1500);
+  } else {
+    alert("Signup failed: " + (data.detail || "Error"));
+  }
+}
+
+// initialize visibility on page load
+window.addEventListener('DOMContentLoaded', () => {
+    toggleProfileFields();
+});
+
+</script>
+
+</body>
+</html>

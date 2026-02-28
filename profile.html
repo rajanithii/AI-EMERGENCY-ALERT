@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LifeLine — Your Profile</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --red:#ff1a1a;
+  --glass:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.1);
+}
+
+body{
+  min-height:100vh;
+  background:#080808;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:'DM Sans',sans-serif;
+  overflow:hidden;
+  color:white;
+}
+
+.grid{
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(255,26,26,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,26,26,0.04) 1px, transparent 1px);
+  background-size:50px 50px;
+  animation:gridMove 25s linear infinite;
+}
+@keyframes gridMove{to{transform:translateY(50px);}}
+
+.glow-bg{
+  position:fixed;
+  width:700px;height:700px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,26,26,0.1) 0%, transparent 65%);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  animation:breathe 5s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{transform:translate(-50%,-50%) scale(1);}
+  50%{transform:translate(-50%,-50%) scale(1.1);}
+}
+
+.card{
+  position:relative;
+  z-index:2;
+  width:380px;
+  padding:40px 36px;
+  border-radius:28px;
+  background:var(--glass);
+  backdrop-filter:blur(30px);
+  border:1px solid var(--border);
+  box-shadow:0 0 80px rgba(255,26,26,0.15), inset 0 1px 0 rgba(255,255,255,0.08);
+  animation:fadeUp 0.8s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(40px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.card-header{
+  text-align:center;
+  margin-bottom:30px;
+}
+.card-header .icon{font-size:40px;margin-bottom:12px;display:block;}
+.card-header h2{
+  font-family:'Orbitron',monospace;
+  font-size:18px;
+  letter-spacing:3px;
+  color:white;
+  margin-bottom:6px;
+}
+.card-header p{
+  font-size:12px;
+  color:rgba(255,255,255,0.35);
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+
+.field-label{
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.4);
+  margin-bottom:6px;
+  margin-top:16px;
+  display:block;
+}
+
+.input-group{
+  position:relative;
+}
+.input-group input{
+  width:100%;
+  padding:13px 16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(255,255,255,0.05);
+  color:white;
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  outline:none;
+  transition:border-color 0.3s, box-shadow 0.3s;
+}
+.input-group input::placeholder{color:rgba(255,255,255,0.2);}
+.input-group input:focus{
+  border-color:rgba(255,26,26,0.5);
+  box-shadow:0 0 20px rgba(255,26,26,0.1);
+}
+
+.required{color:var(--red);margin-left:3px;}
+
+.btn{
+  width:100%;
+  padding:15px;
+  margin-top:28px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(135deg, #ff1a1a, #cc0000);
+  color:white;
+  font-family:'Orbitron',monospace;
+  font-size:13px;
+  letter-spacing:2px;
+  cursor:pointer;
+  box-shadow:0 0 30px rgba(255,26,26,0.35);
+  transition:transform 0.2s, box-shadow 0.2s;
+}
+.btn:hover{transform:scale(1.02);box-shadow:0 0 45px rgba(255,26,26,0.55);}
+.btn:active{transform:scale(0.98);}
+</style>
+</head>
+<body>
+<script src="/static/integration-helper.js"></script>
+
+<div class="grid"></div>
+<div class="glow-bg"></div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="icon">🛡️</span>
+    <h2>EMERGENCY PROFILE</h2>
+    <p>This info helps first responders</p>
+  </div>
+
+  <label class="field-label">Full Name <span class="required">*</span></label>
+  <div class="input-group">
+    <input id="name" type="text" placeholder="Enter your full name">
+  </div>
+
+  <label class="field-label">Medical Condition <span class="required">*</span></label>
+  <div class="input-group">
+    <input id="medical_condition" type="text" placeholder="e.g. Asthma, Diabetes">
+  </div>
+
+  <label class="field-label">Blood Group</label>
+  <div class="input-group">
+    <input id="blood" type="text" placeholder="e.g. O+, A-, B+">
+  </div>
+
+  <label class="field-label">Address</label>
+  <div class="input-group">
+    <input id="address" type="text" placeholder="Your home address">
+  </div>
+
+  <button class="btn" onclick="saveProfile()">SAVE &amp; CONTINUE →</button>
+  <p style="margin-top:14px;font-size:12px;color:rgba(255,255,255,0.25);cursor:pointer;letter-spacing:1px;" onclick="window.location.href='role-select.html'">← Back to role selection</p>
+</div>
+
+<script>
+// if role is not user, send them away
+(function checkRole(){
+  try{
+    const role = localStorage.getItem('role');
+    if(role && role !== 'user'){
+      window.location.replace('hospital-home.html');
+      return;
+    }
+  }catch(e){}
+})();
+
+// If profile already exists, skip straight to home
+const _existing = localStorage.getItem('profile');
+if(_existing){
+  try{
+    const _p = JSON.parse(_existing);
+    if(_p && _p.name) window.location.replace('user.html');
+  }catch(e){}
+}
+
+// Pre-fill if editing
+(function prefill(){
+  try{
+    const p = JSON.parse(localStorage.getItem('profile') || '{}');
+    if(p.name)    document.getElementById('name').value    = p.name;
+    if(p.medical_condition)   document.getElementById('medical_condition').value   = p.medical_condition;
+    if(p.blood)   document.getElementById('blood').value   = p.blood;
+    if(p.address) document.getElementById('address').value = p.address;
+  }catch(e){}
+})();
+
+function saveProfile(){
+  const name    = document.getElementById('name').value.trim();
+  const medical_condition   = document.getElementById('medical_condition').value.trim();
+  const blood   = document.getElementById('blood').value.trim();
+  const address = document.getElementById('address').value.trim();
+
+  if(name && medical_condition){
+    // save locally
+    localStorage.setItem('profile', JSON.stringify({name, medical_condition, blood, address}));
+    localStorage.setItem('role', 'user');
+    // update backend if user already signed in
+    const current = getCurrentUser && getCurrentUser();
+    if(current && current.id){
+      updateUserProfile(current.id, {name, medical_condition, blood, address})
+        .then(res=>console.log('profile sync', res))
+        .catch(err=>console.error('sync error', err));
+    }
+    window.location.href = 'user.html';
+  } else {
+    const btn = document.querySelector('.btn');
+    btn.textContent = '⚠ NAME & MEDICAL CONDITION REQUIRED';
+    btn.style.background = 'linear-gradient(135deg,#ff4444,#aa0000)';
+    setTimeout(()=>{
+      btn.textContent = 'SAVE & CONTINUE →';
+      btn.style.background = '';
+    }, 1800);
+  }
+}
+</script>
+</body>
+</html>

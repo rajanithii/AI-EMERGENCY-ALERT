@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LifeLine — Hospital Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  /* new theme colors */
+  --blue:#8844ff;
+  --red:#ff4444;
+  --green:#44ffcc;
+  --orange:#ffaa33;
+  --glass:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.1);
+  --sidebar:240px;
+}
+
+body{
+  height:100vh;
+  background:#060a0f;
+  display:flex;
+  font-family:'DM Sans',sans-serif;
+  color:white;
+  overflow:hidden;
+}
+
+/* Grid bg */
+.grid{
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,170,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(0,170,255,0.025) 1px, transparent 1px);
+  background-size:50px 50px;
+  pointer-events:none;
+}
+
+/* ====== SIDEBAR ====== */
+.sidebar{
+  width:var(--sidebar);
+  flex-shrink:0;
+  background:rgba(0,0,0,0.4);
+  border-right:1px solid var(--border);
+  backdrop-filter:blur(30px);
+  display:flex;
+  flex-direction:column;
+  padding:28px 0;
+  position:relative;
+  z-index:10;
+}
+
+.sidebar-logo{
+  padding:0 24px 28px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:20px;
+}
+.logo-text{
+  font-family:'Orbitron',monospace;
+  font-size:16px;
+  letter-spacing:4px;
+  color:white;
+  font-weight:900;
+}
+.logo-text span{color:var(--blue);text-shadow:0 0 15px var(--blue);}
+.logo-sub{
+  font-size:10px;
+  letter-spacing:2px;
+  color:rgba(255,255,255,0.25);
+  margin-top:4px;
+  text-transform:uppercase;
+}
+
+.nav-section{
+  font-size:9px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.2);
+  padding:0 24px;
+  margin:16px 0 8px;
+}
+
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 24px;
+  cursor:pointer;
+  transition:all 0.2s;
+  border-left:3px solid transparent;
+  font-size:13px;
+  color:rgba(255,255,255,0.4);
+  letter-spacing:0.5px;
+}
+.nav-item:hover{
+  background:rgba(0,170,255,0.06);
+  color:rgba(255,255,255,0.7);
+}
+.nav-item.active{
+  border-left-color:var(--blue);
+  background:rgba(0,170,255,0.08);
+  color:white;
+}
+.nav-icon{font-size:16px;}
+
+.sidebar-bottom{
+  margin-top:auto;
+  padding:0 16px;
+}
+.hosp-chip{
+  background:rgba(0,170,255,0.08);
+  border:1px solid rgba(0,170,255,0.2);
+  border-radius:12px;
+  padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+}
+.hosp-chip-icon{font-size:22px;}
+.hosp-chip-name{
+  font-size:12px;font-weight:500;
+  color:rgba(255,255,255,0.8);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hosp-chip-role{font-size:10px;letter-spacing:1.5px;color:rgba(0,170,255,0.6);text-transform:uppercase;}
+
+/* ====== MAIN ====== */
+.main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* Top bar */
+.topbar{
+  display:flex;align-items:center;
+  padding:18px 28px;
+  border-bottom:1px solid var(--border);
+  background:rgba(6,10,15,0.8);
+  backdrop-filter:blur(20px);
+  gap:16px;
+  flex-shrink:0;
+}
+.topbar-title{
+  font-family:'Orbitron',monospace;
+  font-size:14px;
+  letter-spacing:3px;
+  color:white;
+}
+.topbar-right{
+  margin-left:auto;
+  display:flex;align-items:center;gap:12px;
+}
+.live-badge{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(0,255,136,0.08);
+  border:1px solid rgba(0,255,136,0.2);
+  border-radius:20px;
+  padding:5px 12px;
+  font-size:11px;
+  letter-spacing:2px;
+  color:var(--green);
+}
+.live-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green);
+  animation:livePulse 1.5s ease-in-out infinite;
+}
+@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+.time-badge{
+  font-family:'Orbitron',monospace;
+  font-size:12px;
+  color:rgba(255,255,255,0.4);
+  letter-spacing:2px;
+}
+
+.edit-btn{
+  padding:7px 14px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:rgba(255,255,255,0.04);
+  color:rgba(255,255,255,0.5);
+  font-size:12px;
+  cursor:pointer;
+  transition:all 0.2s;
+  letter-spacing:1px;
+}
+.edit-btn:hover{background:rgba(255,255,255,0.08);color:white;}
+
+/* Content area */
+.content{
+  flex:1;
+  overflow-y:auto;
+  padding:28px;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-track{background:transparent;}
+.content::-webkit-scrollbar-thumb{background:rgba(0,170,255,0.2);border-radius:2px;}
+
+/* Stat cards row */
+.stats-row{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+}
+.stat-card{
+  padding:20px;
+  border-radius:18px;
+  background:var(--glass);
+  border:1px solid var(--border);
+  backdrop-filter:blur(20px);
+  transition:transform 0.2s,border-color 0.2s;
+}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card.blue:hover{border-color:rgba(0,170,255,0.3);}
+.stat-card.red:hover{border-color:rgba(255,26,26,0.3);}
+.stat-card.green:hover{border-color:rgba(0,255,136,0.3);}
+.stat-card.orange:hover{border-color:rgba(255,136,0,0.3);}
+
+.stat-icon{font-size:24px;margin-bottom:10px;}
+.stat-value{
+  font-family:'Orbitron',monospace;
+  font-size:28px;
+  font-weight:900;
+  line-height:1;
+  margin-bottom:4px;
+}
+.stat-card.blue .stat-value{color:var(--blue);text-shadow:0 0 20px rgba(0,170,255,0.4);}
+.stat-card.red .stat-value{color:var(--red);text-shadow:0 0 20px rgba(255,26,26,0.4);}
+.stat-card.green .stat-value{color:var(--green);text-shadow:0 0 20px rgba(0,255,136,0.4);}
+.stat-card.orange .stat-value{color:var(--orange);text-shadow:0 0 20px rgba(255,136,0,0.4);}
+.stat-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.3);}
+
+/* Two column layout */
+.two-col{
+  display:grid;
+  grid-template-columns:1.6fr 1fr;
+  gap:20px;
+}
+
+/* Panel */
+.panel{
+  border-radius:20px;
+  background:var(--glass);
+  border:1px solid var(--border);
+  backdrop-filter:blur(20px);
+  overflow:hidden;
+}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+}
+.panel-title{
+  font-family:'Orbitron',monospace;
+  font-size:11px;
+  letter-spacing:2.5px;
+  color:rgba(255,255,255,0.6);
+}
+.panel-badge{
+  font-size:11px;
+  padding:3px 10px;
+  border-radius:20px;
+  letter-spacing:1px;
+}
+.badge-red{background:rgba(255,26,26,0.1);color:var(--red);border:1px solid rgba(255,26,26,0.2);}
+.badge-blue{background:rgba(0,170,255,0.1);color:var(--blue);border:1px solid rgba(0,170,255,0.2);}
+
+/* Alert list */
+.alert-list{padding:8px 0;}
+.alert-item{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 20px;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  transition:background 0.2s;
+  cursor:pointer;
+}
+.alert-item:last-child{border-bottom:none;}
+.alert-item:hover{background:rgba(255,255,255,0.03);}
+.alert-item.critical{border-left:3px solid var(--red);}
+.alert-item.moderate{border-left:3px solid var(--orange);}
+.alert-item.resolved{border-left:3px solid var(--green);}
+
+.alert-dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+}
+.alert-item.critical .alert-dot{background:var(--red);box-shadow:0 0 8px var(--red);animation:blink 0.8s ease-in-out infinite;}
+.alert-item.moderate .alert-dot{background:var(--orange);}
+.alert-item.resolved .alert-dot{background:var(--green);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+
+.alert-info{flex:1;}
+.alert-name{font-size:13px;font-weight:500;margin-bottom:2px;}
+.alert-meta{font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:0.5px;}
+
+.alert-time{
+  font-size:11px;
+  color:rgba(255,255,255,0.25);
+  white-space:nowrap;
+  font-family:'Orbitron',monospace;
+  letter-spacing:1px;
+}
+
+.alert-actions{
+  display:flex;gap:6px;
+}
+.alert-action{
+  padding:5px 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:transparent;
+  color:rgba(255,255,255,0.4);
+  font-size:11px;
+  cursor:pointer;
+  transition:all 0.2s;
+  white-space:nowrap;
+}
+.alert-action:hover{background:rgba(0,170,255,0.1);border-color:rgba(0,170,255,0.3);color:var(--blue);}
+
+/* Hospital info panel */
+.info-list{padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.info-row{
+  display:flex;flex-direction:column;gap:3px;
+  padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.info-row:last-child{border-bottom:none;padding-bottom:0;}
+.info-key{
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,0.25);
+}
+.info-val{font-size:14px;color:white;font-weight:500;}
+.info-val.ip{
+  font-family:'Orbitron',monospace;
+  font-size:13px;
+  color:var(--blue);
+}
+
+/* Status select */
+.status-select{
+  display:flex;gap:8px;padding:0 20px 16px;
+}
+.status-pill{
+  flex:1;padding:8px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);
+  color:rgba(255,255,255,0.3);
+  font-size:11px;text-align:center;cursor:pointer;
+  transition:all 0.2s;letter-spacing:1px;
+}
+.status-pill.active-s{
+  border-color:rgba(0,255,136,0.4);
+  background:rgba(0,255,136,0.08);color:var(--green);
+}
+.status-pill.busy-s{
+  border-color:rgba(255,136,0,0.4);
+  background:rgba(255,136,0,0.08);color:var(--orange);
+}
+.status-pill.offline-s{
+  border-color:rgba(255,26,26,0.4);
+  background:rgba(255,26,26,0.08);color:var(--red);
+}
+
+/* ECG strip */
+.ecg-strip{
+  border-radius:20px;
+  background:var(--glass);
+  border:1px solid var(--border);
+  padding:16px 20px;
+  overflow:hidden;
+}
+.ecg-strip svg{width:100%;height:50px;}
+.ecg-strip path{
+  stroke:var(--blue);stroke-width:2;fill:none;
+  stroke-dasharray:2000;stroke-dashoffset:2000;
+  animation:ecgDraw 3s linear infinite;
+}
+@keyframes ecgDraw{to{stroke-dashoffset:0;}}
+
+/* Map Modal */
+#mapModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+#mapModal.show {
+  display: flex;
+}
+
+.map-modal-content {
+  width: 90vw;
+  height: 85vh;
+  max-width: 1000px;
+  background: rgba(0,0,0,0.9);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.map-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.map-modal-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: white;
+}
+
+.map-modal-close {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.map-modal-close:hover {
+  background: rgba(255,26,26,0.1);
+  border-color: rgba(255,26,26,0.3);
+}
+
+#mapContainer {
+  flex: 1;
+  position: relative;
+}
+
+.map-info-panel {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  max-width: 300px;
+  backdrop-filter: blur(20px);
+}
+
+.map-info-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--red);
+  margin-bottom: 8px;
+}
+
+.map-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: rgba(255,255,255,0.7);
+}
+.map-info-row:last-child {
+  margin-bottom: 0;
+}
+.map-info-label {
+  color: rgba(255,255,255,0.4);
+  font-weight: 600;
+}
+
+</style>
+</head>
+<body>
+
+<div class="grid"></div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">LIFE<span>LINE</span></div>
+    <div class="logo-sub">Hospital Portal</div>
+  </div>
+
+  <div class="nav-section">Main</div>
+  <div class="nav-item active"><span class="nav-icon">📊</span>Dashboard</div>
+  <div class="nav-item"><span class="nav-icon">🚨</span>Alerts</div>
+  <div class="nav-item"><span class="nav-icon">🛏️</span>Bed Status</div>
+  <div class="nav-item"><span class="nav-icon">🚑</span>Ambulance</div>
+
+  <div class="nav-section">Settings</div>
+  <div class="nav-item" onclick="window.location.href='hospital-profile.html'"><span class="nav-icon">✏️</span>Edit Profile</div>
+  <div class="nav-item" onclick="window.location.href='signup.html'"><span class="nav-icon">🚪</span>Logout</div>
+
+  <div class="sidebar-bottom">
+    <div class="hosp-chip">
+      <span class="hosp-chip-icon">🏥</span>
+      <div>
+        <div class="hosp-chip-name" id="sidebarHospName">Hospital</div>
+        <div class="hosp-chip-role">Hospital</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-title">DASHBOARD</div>
+    <div class="topbar-right">
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="time-badge" id="liveClock">--:--:--</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-left:8px;" id="lastRefresh">Last: --:--:--</div>
+      <button id="pollToggle" class="edit-btn" style="margin-left:8px;padding:6px 10px;">Pause</button>
+      <button class="edit-btn" onclick="window.location.href='hospital-profile.html'">✏ Edit Profile</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card blue">
+        <div class="stat-icon">📡</div>
+        <div class="stat-value" id="statIP">—</div>
+        <div class="stat-label">IP Address</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">🚨</div>
+        <div class="stat-value">3</div>
+        <div class="stat-label">Active Alerts</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">🛏️</div>
+        <div class="stat-value">24</div>
+        <div class="stat-label">Beds Available</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">🚑</div>
+        <div class="stat-value">2</div>
+        <div class="stat-label">En Route</div>
+      </div>
+    </div>
+
+    <!-- ECG strip -->
+    <div class="ecg-strip">
+      <svg viewBox="0 0 1200 50" preserveAspectRatio="none">
+        <path d="M0 25 L150 25 L165 8 L180 42 L195 25 L400 25 L415 5 L430 45 L445 25 L650 25 L665 10 L680 40 L695 25 L900 25 L915 6 L930 44 L945 25 L1200 25"/>
+      </svg>
+    </div>
+
+    <!-- Two col -->
+    <div class="two-col">
+      <!-- Incoming alerts -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">INCOMING ALERTS</div>
+          <button onclick="cleanupAndRefresh()" style="padding:6px 14px;background:linear-gradient(135deg,#00aaff,#0088cc);border:none;border-radius:6px;color:white;cursor:pointer;font-size:11px;font-weight:bold;letter-spacing:1px;margin-left:auto;">REFRESH</button>
+        </div>
+          <div class="alert-list" id="alertList">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+      <!-- Hospital info -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">FACILITY INFO</div>
+          <div class="panel-badge badge-blue" id="statusBadge">● Active</div>
+        </div>
+        <div class="info-list">
+          <div class="info-row">
+            <div class="info-key">Hospital Name</div>
+            <div class="info-val" id="infoName">—</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">Reg. Number</div>
+            <div class="info-val" id="infoId">—</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">Phone</div>
+            <div class="info-val" id="infoPhone">—</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">Address</div>
+            <div class="info-val" id="infoAddr" style="font-size:12px;color:rgba(255,255,255,0.6);">—</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">IP Address</div>
+            <div class="info-val ip" id="infoIP">—</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">Port</div>
+            <div class="info-val ip" id="infoPort">—</div>
+          </div>
+        </div>
+        <div class="status-select">
+          <div class="status-pill active-s" id="sActive" onclick="updateStatus('active')">✅ Active</div>
+          <div class="status-pill" id="sBusy"   onclick="updateStatus('busy')">⚠️ Busy</div>
+          <div class="status-pill" id="sOffline" onclick="updateStatus('offline')">🔴 Offline</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAP MODAL -->
+<div id="mapModal">
+  <div class="map-modal-content">
+    <div class="map-modal-header">
+      <div class="map-modal-title">🗺️ INCOMING ALERT MAP</div>
+      <div class="map-modal-close" onclick="closeMapModal()">✕</div>
+    </div>
+    <div id="mapContainer"></div>
+    <div class="map-info-panel" id="mapInfoPanel" style="display:none;">
+      <div class="map-info-title">📍 ALERT DETAILS</div>
+      <div class="map-info-row">
+        <span class="map-info-label">Patient:</span>
+        <span id="mapInfoName">—</span>
+      </div>
+      <div class="map-info-row">
+        <span class="map-info-label">Distance:</span>
+        <span id="mapInfoDist">—</span>
+      </div>
+      <div class="map-info-row">
+        <span class="map-info-label">Hospital:</span>
+        <span id="mapInfoHosp">—</span>
+      </div>
+      <div class="map-info-row">
+        <span class="map-info-label">Time:</span>
+        <span id="mapInfoTime">—</span>
+      </div>
+      <div class="map-info-row">
+        <span class="map-info-label">AI Suggestion:</span>
+        <span id="mapInfoAI">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/integration-helper.js"></script>
+<script src="/static/map.js"></script>
+<script>
+console.log('hospital-home.html loaded');
+// add AI status badge in header when document ready
+window.addEventListener('DOMContentLoaded', ()=>{
+    const header = document.querySelector('header');
+    if(header){
+        const span = document.createElement('span');
+        span.id = 'aiStatus';
+        span.style.cssText = 'margin-left:16px;color:#00ff88;font-weight:600;font-size:12px';
+        span.textContent = 'AI: Active';
+        header.appendChild(span);
+    }
+});
+
+// probe backend for AI availability and update badge
+async function updateAIStatus() {
+    try{
+        const res = await getHospitalRecommendation(0,0);
+        const badge = document.getElementById('aiStatus');
+        if(res && res.success && res.data){
+            if(res.data.available===false){
+                badge && (badge.textContent='AI: Unavailable');
+            } else {
+                badge && (badge.textContent='AI: Active');
+            }
+        }
+    }catch(e){
+        const badge = document.getElementById('aiStatus');
+        badge && (badge.textContent='AI: Offline');
+    }
+}
+updateAIStatus();
+const ALERTS_API = (typeof window !== 'undefined' && window.location ? window.location.origin : 'http://127.0.0.1:8000') + '/api/emergencies';
+console.log('ALERTS_API endpoint:', ALERTS_API);
+console.log('window.location.origin:', window.location.origin);
+
+// ===== MAP MODAL FUNCTIONS =====
+let mapInstance = null;
+let userMarker = null;
+let hospitalMarkers = {};
+let currentAlertData = null;
+
+function openMapModal(alertData) {
+  console.log('Opening map modal with alert data:', alertData);
+  
+  currentAlertData = alertData;
+  document.getElementById('mapModal').classList.add('show');
+  
+  // Update info panel
+  document.getElementById('mapInfoName').textContent = alertData.name;
+  document.getElementById('mapInfoDist').textContent = (alertData.distance || 0).toFixed(2) + ' km';
+  document.getElementById('mapInfoHosp').textContent = alertData.hospital;
+  document.getElementById('mapInfoTime').textContent = alertData.time;
+  document.getElementById('mapInfoAI').textContent = alertData.ai_recommendation || '—';
+  document.getElementById('mapInfoPanel').style.display = 'block';
+  
+  // if we don't have coordinates, bail out early
+  if (!alertData.hasCoords) {
+    console.warn('No coordinates available for this alert, skipping map');
+    return;
+  }
+
+  // fetch AI recommendation dynamically if not already present
+  if(!alertData.ai_recommendation){
+    getHospitalRecommendation(alertData.lat, alertData.lon)
+      .then(res=>{
+        if(res.success && res.data.available && res.data.recommendation){
+          document.getElementById('mapInfoAI').textContent = res.data.recommendation;
+        } else if(res.success && !res.data.available){
+          document.getElementById('mapInfoAI').textContent = 'AI not available';
+        }
+      }).catch(e=>{console.error('recommendation error',e);});
+  }
+
+  // Initialize map
+  setTimeout(() => {
+    console.log('Map initialization timeout - mapInstance exists:', !!mapInstance);
+    if (!mapInstance) {
+      console.log('Creating new map instance');
+      initializeAlertMap(alertData.lat, alertData.lon);
+    } else {
+      console.log('Updating existing map instance');
+      updateAlertMap(alertData.lat, alertData.lon);
+    }
+  }, 100);
+}
+
+function closeMapModal() {
+  document.getElementById('mapModal').classList.remove('show');
+  if (mapInstance) {
+    mapInstance.remove();
+    mapInstance = null;
+    userMarker = null;
+    hospitalMarkers = {};
+  }
+}
+
+function initializeAlertMap(userLat, userLon) {
+  console.log('initializeAlertMap called with:', userLat, userLon);
+  
+  const container = document.getElementById('mapContainer');
+  if (!container) {
+    console.error('Map container not found!');
+    return;
+  }
+  
+  console.log('Map container found, initializing map...');
+  
+  // Initialize map
+  mapInstance = L.map(container).setView([userLat, userLon], 14);
+  console.log('Leaflet map instance created:', mapInstance);
+  
+  // OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(mapInstance);
+  console.log('Map tiles loaded');
+  
+  // User location marker (RED - patient)
+  userMarker = L.circleMarker([userLat, userLon], {
+    radius: 12,
+    fillColor: '#ff4444',
+    color: '#fff',
+    weight: 3,
+    opacity: 1,
+    fillOpacity: 0.9
+  }).addTo(mapInstance);
+  userMarker.bindPopup('<div style="text-align:center;font-weight:bold">🚨 Patient Location</div>');
+  console.log('User marker added at:', userLat, userLon);
+  
+  // Fetch nearby hospitals
+  fetchHospitalsForAlert(userLat, userLon);
+}
+
+function updateAlertMap(userLat, userLon) {
+  if (!mapInstance) return;
+  
+  // Update map view
+  mapInstance.setView([userLat, userLon], 14);
+  
+  // Update user marker
+  if (userMarker) {
+    userMarker.setLatLng([userLat, userLon]);
+  } else {
+    userMarker = L.circleMarker([userLat, userLon], {
+      radius: 12,
+      fillColor: '#ff4444',
+      color: '#fff',
+      weight: 3,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(mapInstance);
+    userMarker.bindPopup('<div style="text-align:center;font-weight:bold">🚨 Patient Location</div>');
+  }
+}
+
+async function fetchHospitalsForAlert(userLat, userLon) {
+  try {
+    console.log('fetchHospitalsForAlert called with:', userLat, userLon);
+    
+    if (!mapInstance) {
+      console.error('Map instance not initialized');
+      return;
+    }
+    
+    const apiBase = window.location.origin + '/api';
+    const url = `${apiBase}/hospitals/nearby?lat=${userLat}&lon=${userLon}`;
+    console.log('Fetching hospitals from:', url);
+    
+    const res = await fetch(url);
+    console.log('Hospitals response status:', res.status);
+    
+    if (!res.ok) throw new Error('Failed to fetch hospitals: ' + res.status);
+    
+    const hospitals = await res.json();
+    console.log('Hospitals received:', hospitals.length, hospitals);
+    
+    // Clear existing hospital markers
+    Object.values(hospitalMarkers).forEach(marker => {
+      if (mapInstance.hasLayer(marker)) {
+        mapInstance.removeLayer(marker);
+      }
+    });
+    hospitalMarkers = {};
+    
+    if (!hospitals || hospitals.length === 0) {
+      console.warn('No hospitals found');
+      return;
+    }
+    
+    // Plot hospitals
+    console.log('Plotting', Math.min(10, hospitals.length), 'hospitals on map');
+    hospitals.slice(0, 10).forEach((hospital, index) => { // Show top 10 closest
+      const isNearest = index === 0;
+      const color = isNearest ? '#00ff88' : '#44ffcc';
+      const radius = isNearest ? 14 : 9;
+      
+      console.log(`Plotting hospital ${index}:`, hospital.name, 'at', hospital.lat, hospital.lon);
+      
+      const marker = L.circleMarker([hospital.lat, hospital.lon], {
+        radius: radius,
+        fillColor: color,
+        color: '#fff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.8
+      }).addTo(mapInstance);
+      
+      const popupHtml = `
+        <div style="text-align:center;font-size:12px;font-weight:bold">
+          🏥 ${hospital.name}<br>
+          Distance: ${hospital.distance.toFixed(2)} km<br>
+          ${isNearest ? '⭐ NEAREST' : ''}
+        </div>
+      `;
+      
+      marker.bindPopup(popupHtml);
+      hospitalMarkers[hospital.id] = marker;
+      
+      // Draw line to nearest hospital
+      if (isNearest && currentAlertData) {
+        console.log('Drawing polyline to nearest hospital');
+        L.polyline([[currentAlertData.lat, currentAlertData.lon], [hospital.lat, hospital.lon]], {
+          color: '#00ff88',
+          weight: 2,
+          opacity: 0.6,
+          dashArray: '5, 10'
+        }).addTo(mapInstance);
+      }
+    });
+    
+    console.log('Hospital markers plotted successfully');
+    
+  } catch (e) {
+    console.error('Error fetching hospitals for alert:', e);
+  }
+}
+
+// ===== EXISTING ALERT FUNCTIONS =====
+
+
+// load actual emergency events from backend
+async function fetchAlerts() {
+  try {
+    console.log('fetchAlerts: fetching from', ALERTS_API);
+    const res = await fetch(ALERTS_API);
+    console.log('fetchAlerts: response status', res.status);
+    const data = await res.json();
+    console.log('fetchAlerts: received', Array.isArray(data) ? data.length : 0, 'alerts', data);
+    if (!Array.isArray(data)) return [];
+    return data;
+  } catch (e) {
+    console.error('Error fetching alerts', e);
+    return [];
+  }
+}
+
+function buildAlerts(alerts) {
+  const list = document.getElementById('alertList');
+  console.log('buildAlerts called with:', alerts ? alerts.length : 0, 'alerts');
+  if (!alerts || alerts.length === 0) {
+    console.log('No alerts, showing empty message');
+    list.innerHTML = '<div class="alert-item">No active alerts</div>';
+    return;
+  }
+  
+  console.log('buildAlerts: rendering', alerts.length, 'alerts');
+  
+  // show map centered on latest alert
+  const latest = alerts[0];
+  list.innerHTML = alerts.map(a=>{
+    // Parse coordinates as floats to ensure proper Leaflet handling
+    const lat = parseFloat(a.latitude || '');
+    const lon = parseFloat(a.longitude || '');
+    const distance = parseFloat(a.hospital_distance || 0);
+    const hasCoords = !isNaN(lat) && !isNaN(lon) && (lat !== 0 || lon !== 0);
+
+    // sanitize text fields to avoid breaking inline JS/HTML when names contain quotes
+    const safeName = (a.user_name || 'Unknown').toString().replace(/'/g, "\\'");
+    const safeHosp = (a.nearest_hospital || 'N/A').toString().replace(/'/g, "\\'");
+    const safeTime = (a.timestamp || '').toString().replace(/'/g, "\\'");
+
+    console.log('buildAlerts: alert item -', a.user_name, 'coords:', lat, lon, 'hasCoords', hasCoords);
+
+    return `
+    <div class="alert-item critical" onclick="console.log('Alert clicked'); openMapModal({id: ${a.id}, name: '${safeName}', lat: ${lat}, lon: ${lon}, hospital: '${safeHosp}', distance: ${distance}, time: '${safeTime}', hasCoords: ${hasCoords}})">
+      <div class="alert-dot"></div>
+      <div class="alert-info">
+        <div class="alert-name">${safeName}</div>
+        <div class="alert-meta">${hasCoords ? `${lat.toFixed(6)} ${lon.toFixed(6)}` : 'Location unknown'}</div>
+        ${hasCoords && a.nearest_hospital ? `<div class="alert-meta">Nearest: ${safeHosp} (${distance.toFixed(2)}km)</div>` : ''}
+        ${a.ai_recommendation ? `<div class="alert-meta">AI: ${a.ai_recommendation.toString().replace(/'/g, "\\'")}</div>` : ''}
+      </div>
+      <div class="alert-time">${safeTime}</div>
+      <div class="alert-actions">
+        <button class="alert-action" onclick="event.stopPropagation(); window.open('https://www.google.com/maps/search/?api=1&query=${lat},${lon}','_blank')">Map</button>
+        <button class="alert-action" onclick="markAlertHandled(${a.id})">Handled</button>
+      </div>
+    </div>
+  `}).join('');
+}
+
+async function markAlertHandled(alertId) {
+  try {
+    const apiUrl = ALERTS_API.replace('/emergencies', '') + '/emergency/' + alertId + '?status=handled';
+    const res = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (res.ok) {
+      refreshAlerts();
+    }
+  } catch (e) {
+    console.error('Error marking alert handled', e);
+  }
+}
+
+// automatically refresh alerts every 3 seconds
+// new requirement: poll backend every 3s for new alerts
+// Polling control: default to 10s interval, start automatically
+let pollIntervalMs = 10000; // 10 seconds
+let pollTimer = null;
+
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(refreshAlerts, pollIntervalMs);
+  const btn = document.getElementById('pollToggle'); if(btn) btn.textContent = 'Pause';
+}
+
+function stopPolling(){
+  if(pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  const btn = document.getElementById('pollToggle'); if(btn) btn.textContent = 'Resume';
+}
+
+function togglePolling(){
+  if(pollTimer) stopPolling(); else { startPolling(); updateLastRefresh(); }
+}
+
+function updateLastRefresh(){
+  const el = document.getElementById('lastRefresh');
+  if(el) el.textContent = 'Last: ' + new Date().toLocaleTimeString();
+}
+
+// start polling on load
+startPolling();
+// setInterval(async () => {
+//   const alerts = await fetchAlerts();
+//   buildAlerts(alerts);
+// }, 15000);
+
+async function refreshAlerts() {
+  console.log('refreshAlerts: polling for new alerts...');
+  const list = document.getElementById('alertList');
+  if (list) list.innerHTML = '<div class="alert-item">Loading...</div>';
+  const alerts = await fetchAlerts();
+  buildAlerts(alerts);
+  updateLastRefresh();
+}
+
+async function cleanupAndRefresh() {
+  console.log('cleanupAndRefresh: deleting all alerts and refreshing...');
+  try {
+    const apiBase = window.location.origin ? window.location.origin + '/api' : 'http://127.0.0.1:8000/api';
+    const res = await fetch(`${apiBase}/alerts/cleanup`, { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      console.log('Cleanup result:', data);
+    }
+  } catch (e) {
+    console.error('Cleanup error:', e);
+  }
+  // Always refresh alerts after cleanup attempt
+  await refreshAlerts();
+}
+
+// initially load when page opens
+(async () => {
+  console.log('Page initialization: fetching initial alerts...');
+  const alerts = await fetchAlerts();
+  console.log('Page initialization: got', alerts ? alerts.length : 0, 'alerts');
+  buildAlerts(alerts);
+  console.log('Page initialization: buildAlerts complete, alertList innerHTML length:', document.getElementById('alertList') ? document.getElementById('alertList').innerHTML.length : 'element not found');
+})();
+
+// wire up poll toggle button
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('pollToggle');
+  if(btn) btn.addEventListener('click', togglePolling);
+});
+
+// Load hospital data
+const hosp = JSON.parse(localStorage.getItem('hospital') || '{}');
+document.getElementById('sidebarHospName').textContent = hosp.name || 'Hospital';
+document.getElementById('infoName').textContent   = hosp.name    || '—';
+document.getElementById('infoId').textContent     = hosp.id      || '—';
+document.getElementById('infoPhone').textContent  = hosp.phone   || '—';
+document.getElementById('infoAddr').textContent   = hosp.address || '—';
+document.getElementById('infoIP').textContent     = hosp.ip      || '—';
+document.getElementById('infoPort').textContent   = hosp.port    || '—';
+document.getElementById('statIP').textContent     = hosp.ip      || 'N/A';
+
+// Status
+let currentStatus = hosp.status || 'active';
+updateStatus(currentStatus);
+
+function updateStatus(s){
+  currentStatus = s;
+  ['active','busy','offline'].forEach(x=>{
+    const el = document.getElementById('s'+x.charAt(0).toUpperCase()+x.slice(1));
+    el.className = 'status-pill';
+    if(x===s) el.className += ' '+ x +'-s';
+  });
+  const badge = document.getElementById('statusBadge');
+  if(s==='active') { badge.textContent='● Active'; badge.className='panel-badge badge-blue'; }
+  else if(s==='busy') { badge.textContent='● Busy'; badge.style.cssText='background:rgba(255,136,0,0.1);color:#ff8800;border:1px solid rgba(255,136,0,0.2);font-size:11px;padding:3px 10px;border-radius:20px;letter-spacing:1px;'; }
+  else { badge.textContent='● Offline'; badge.style.cssText='background:rgba(255,26,26,0.1);color:#ff1a1a;border:1px solid rgba(255,26,26,0.2);font-size:11px;padding:3px 10px;border-radius:20px;letter-spacing:1px;'; }
+
+  // Persist
+  const data = JSON.parse(localStorage.getItem('hospital') || '{}');
+  data.status = s;
+  localStorage.setItem('hospital', JSON.stringify(data));
+}
+
+// Live clock
+function tick(){
+  const now = new Date();
+  document.getElementById('liveClock').textContent =
+    now.toTimeString().slice(0,8);
+}
+
+tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>

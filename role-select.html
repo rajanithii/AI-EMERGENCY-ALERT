@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LifeLine — Select Role</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --red:#ff1a1a;
+  --blue:#00aaff;
+  --glass:rgba(255,255,255,0.05);
+  --border:rgba(255,255,255,0.08);
+}
+
+body{
+  min-height:100vh;
+  background:#080808;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  font-family:'DM Sans',sans-serif;
+  color:white;
+  overflow:hidden;
+}
+
+/* Animated grid */
+.grid{
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size:50px 50px;
+  animation:gridScroll 20s linear infinite;
+}
+@keyframes gridScroll{to{transform:translateY(50px);}}
+
+/* Dual glow — red left, blue right */
+.glow-red{
+  position:fixed;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,26,26,0.12) 0%,transparent 70%);
+  top:50%;left:20%;transform:translate(-50%,-50%);
+  animation:glowPulse 4s ease-in-out infinite;
+}
+.glow-blue{
+  position:fixed;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,170,255,0.12) 0%,transparent 70%);
+  top:50%;left:80%;transform:translate(-50%,-50%);
+  animation:glowPulse 4s ease-in-out infinite 1s;
+}
+@keyframes glowPulse{
+  0%,100%{transform:translate(-50%,-50%) scale(1);}
+  50%{transform:translate(-50%,-50%) scale(1.15);}
+}
+
+/* Header */
+.header{
+  position:relative;z-index:2;
+  text-align:center;
+  margin-bottom:48px;
+  animation:fadeDown 0.8s cubic-bezier(0.34,1.4,0.64,1) both;
+}
+@keyframes fadeDown{
+  from{opacity:0;transform:translateY(-30px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.logo{
+  font-family:'Orbitron',monospace;
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:6px;
+  color:white;
+  text-shadow:0 0 30px rgba(255,255,255,0.2);
+  margin-bottom:8px;
+}
+.logo span{color:var(--red);text-shadow:0 0 20px var(--red);}
+.tagline{
+  font-size:12px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.3);
+}
+
+/* Role cards */
+.cards-row{
+  position:relative;z-index:2;
+  display:flex;
+  gap:24px;
+  animation:fadeUp 0.8s cubic-bezier(0.34,1.4,0.64,1) 0.2s both;
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(40px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.role-card{
+  width:260px;
+  padding:36px 28px;
+  border-radius:28px;
+  background:var(--glass);
+  backdrop-filter:blur(30px);
+  border:1px solid var(--border);
+  text-align:center;
+  cursor:pointer;
+  transition:transform 0.3s, box-shadow 0.3s, border-color 0.3s, background 0.3s;
+  position:relative;
+  overflow:hidden;
+}
+.role-card::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:28px;
+  opacity:0;
+  transition:opacity 0.3s;
+}
+.role-card:hover{transform:translateY(-8px) scale(1.02);}
+
+/* Hospital card accent */
+.role-card.hospital::before{
+  background:linear-gradient(135deg,rgba(0,170,255,0.08),transparent);
+}
+.role-card.hospital:hover{
+  border-color:rgba(0,170,255,0.4);
+  box-shadow:0 20px 60px rgba(0,170,255,0.2), 0 0 0 1px rgba(0,170,255,0.15);
+}
+.role-card.hospital:hover::before{opacity:1;}
+
+/* User card accent */
+.role-card.user-card::before{
+  background:linear-gradient(135deg,rgba(255,26,26,0.08),transparent);
+}
+.role-card.user-card:hover{
+  border-color:rgba(255,26,26,0.4);
+  box-shadow:0 20px 60px rgba(255,26,26,0.2), 0 0 0 1px rgba(255,26,26,0.15);
+}
+.role-card.user-card:hover::before{opacity:1;}
+
+/* Active/selected state */
+.role-card.selected{transform:translateY(-10px) scale(1.03);}
+.role-card.hospital.selected{
+  border-color:rgba(0,170,255,0.6);
+  box-shadow:0 24px 70px rgba(0,170,255,0.3), 0 0 0 1px rgba(0,170,255,0.3);
+  background:rgba(0,170,255,0.08);
+}
+.role-card.user-card.selected{
+  border-color:rgba(255,26,26,0.6);
+  box-shadow:0 24px 70px rgba(255,26,26,0.3), 0 0 0 1px rgba(255,26,26,0.3);
+  background:rgba(255,26,26,0.08);
+}
+
+.role-icon-wrap{
+  width:90px;height:90px;
+  border-radius:50%;
+  margin:0 auto 20px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:42px;
+  position:relative;z-index:1;
+  transition:transform 0.3s, box-shadow 0.3s;
+}
+.hospital .role-icon-wrap{
+  background:rgba(0,170,255,0.1);
+  border:1px solid rgba(0,170,255,0.25);
+}
+.hospital:hover .role-icon-wrap{
+  transform:scale(1.1);
+  box-shadow:0 0 30px rgba(0,170,255,0.3);
+}
+.user-card .role-icon-wrap{
+  background:rgba(255,26,26,0.1);
+  border:1px solid rgba(255,26,26,0.25);
+}
+.user-card:hover .role-icon-wrap{
+  transform:scale(1.1);
+  box-shadow:0 0 30px rgba(255,26,26,0.3);
+}
+
+.role-title{
+  font-family:'Orbitron',monospace;
+  font-size:15px;
+  letter-spacing:3px;
+  font-weight:700;
+  margin-bottom:10px;
+  position:relative;z-index:1;
+}
+.hospital .role-title{color:var(--blue);}
+.user-card .role-title{color:var(--red);}
+
+.role-desc{
+  font-size:13px;
+  color:rgba(255,255,255,0.4);
+  line-height:1.6;
+  position:relative;z-index:1;
+  margin-bottom:20px;
+}
+
+.role-features{
+  list-style:none;
+  text-align:left;
+  margin-bottom:24px;
+  position:relative;z-index:1;
+}
+.role-features li{
+  font-size:12px;
+  color:rgba(255,255,255,0.35);
+  padding:5px 0;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.role-features li:last-child{border-bottom:none;}
+.feature-dot{
+  width:5px;height:5px;border-radius:50%;flex-shrink:0;
+}
+.hospital .feature-dot{background:var(--blue);}
+.user-card .feature-dot{background:var(--red);}
+
+.role-btn{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  font-family:'Orbitron',monospace;
+  font-size:11px;
+  letter-spacing:2px;
+  cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s;
+  position:relative;z-index:1;
+}
+.hospital .role-btn{
+  background:linear-gradient(135deg,#0088cc,#005588);
+  color:white;
+  box-shadow:0 0 20px rgba(0,136,204,0.3);
+}
+.hospital .role-btn:hover{box-shadow:0 0 35px rgba(0,136,204,0.5);}
+.user-card .role-btn{
+  background:linear-gradient(135deg,#ff1a1a,#cc0000);
+  color:white;
+  box-shadow:0 0 20px rgba(255,26,26,0.3);
+}
+.user-card .role-btn:hover{box-shadow:0 0 35px rgba(255,26,26,0.5);}
+.role-btn:active{transform:scale(0.97);}
+
+/* Divider "OR" */
+.or-divider{
+  position:relative;z-index:2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:0 4px;
+}
+.or-line{width:1px;height:60px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,0.15),transparent);}
+.or-text{
+  font-size:11px;
+  letter-spacing:2px;
+  color:rgba(255,255,255,0.2);
+  text-transform:uppercase;
+}
+
+/* Bottom hint */
+.hint{
+  position:relative;z-index:2;
+  margin-top:36px;
+  font-size:12px;
+  color:rgba(255,255,255,0.2);
+  letter-spacing:1px;
+  text-align:center;
+  animation:fadeUp 0.8s cubic-bezier(0.34,1.4,0.64,1) 0.4s both;
+}
+
+/* Transition overlay */
+.transition-overlay{
+  position:fixed;inset:0;
+  z-index:999;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.4s ease;
+}
+.transition-overlay.active{opacity:1;pointer-events:all;}
+.transition-overlay.hospital-t{background:radial-gradient(circle at center,rgba(0,170,255,0.15),#080808 70%);}
+.transition-overlay.user-t{background:radial-gradient(circle at center,rgba(255,26,26,0.15),#080808 70%);}
+</style>
+</head>
+<body>
+
+<div class="grid"></div>
+<div class="glow-red"></div>
+<div class="glow-blue"></div>
+
+<div class="header">
+  <div class="logo">LIFE<span>LINE</span></div>
+  <div class="tagline">Select your role to continue</div>
+</div>
+
+<div class="cards-row">
+
+  <!-- Hospital Card -->
+  <div class="role-card hospital" onclick="selectRole('hospital')">
+    <div class="role-icon-wrap">🏥</div>
+    <div class="role-title">HOSPITAL</div>
+    <div class="role-desc">For medical facilities &amp; emergency response centers</div>
+    <ul class="role-features">
+      <li><span class="feature-dot"></span>Register hospital details</li>
+      <li><span class="feature-dot"></span>Manage incoming alerts</li>
+      <li><span class="feature-dot"></span>Network IP configuration</li>
+      <li><span class="feature-dot"></span>Emergency response panel</li>
+    </ul>
+    <button class="role-btn">SELECT →</button>
+  </div>
+
+  <div class="or-divider">
+    <div class="or-line"></div>
+    <div class="or-text">or</div>
+    <div class="or-line"></div>
+  </div>
+
+  <!-- User Card -->
+  <div class="role-card user-card" onclick="selectRole('user')">
+    <div class="role-icon-wrap">🧑</div>
+    <div class="role-title">USER</div>
+    <div class="role-desc">For individuals seeking emergency assistance &amp; safety</div>
+    <ul class="role-features">
+      <li><span class="feature-dot"></span>Personal emergency profile</li>
+      <li><span class="feature-dot"></span>One-tap SOS alert</li>
+      <li><span class="feature-dot"></span>Blood group &amp; contact info</li>
+      <li><span class="feature-dot"></span>5-second smart countdown</li>
+    </ul>
+    <button class="role-btn">SELECT →</button>
+  </div>
+
+</div>
+
+<div class="hint">Your role determines your dashboard experience</div>
+
+<div class="transition-overlay" id="transOverlay"></div>
+
+<script>
+function selectRole(role){
+  localStorage.setItem('role', role);
+
+  const overlay = document.getElementById('transOverlay');
+  overlay.className = 'transition-overlay active ' + (role === 'hospital' ? 'hospital-t' : 'user-t');
+
+  // Highlight selected card
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  const target = document.querySelector('.role-card.' + (role === 'hospital' ? 'hospital' : 'user-card'));
+  if(target) target.classList.add('selected');
+
+  setTimeout(()=>{
+    if(role === 'hospital'){
+      // If hospital profile already saved, skip to dashboard
+      const hosp = localStorage.getItem('hospital');
+      window.location.href = hosp ? 'hospital-home.html' : 'hospital-profile.html';
+    } else {
+      // If user profile already saved, skip to home
+      const prof = localStorage.getItem('profile');
+      window.location.href = prof ? 'user.html' : 'profile.html';
+    }
+  }, 500);
+}
+</script>
+</body>
+</html>
